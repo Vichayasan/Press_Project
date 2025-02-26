@@ -52,7 +52,9 @@ const int LOADCELL_SCK_PIN = 25;
 
 //UI handles
 uint16_t wifi_ssid_text, wifi_pass_text;
-uint16_t resultLabel, mainLabel, grouplabel, grouplabel2, mainSwitcher, mainSlider, mainText, settingZNumber, resultButton, mainTime, downloadButton, selectDownload, SDcardRead, ADSStatus, patternStatus, logStatus;
+uint16_t resultLabel, mainLabel, grouplabel, grouplabel2, mainSwitcher, mainSlider, mainText;
+uint16_t settingZNumber, resultButton, mainTime, downloadButton, selectDownload, SDcardRead, ADSStatus, patternStatus, logStatus;
+uint16_t maxDept; 
 uint16_t styleButton, styleLabel, styleSwitcher, styleSlider, styleButton2, styleLabel2, styleSlider2;
 uint16_t nameText, loopText, posText, moveText, saveConfigButton, depthText, intervalPress, offSet1, offSet2, offSet3, offSet4;
 uint16_t graph;
@@ -67,8 +69,8 @@ String fileNameResult = "";
 
 
 // REPLACE WITH YOUR CALIBRATION FACTOR
-#define CALIBRATION_FACTOR 184.703557312253  // 184.703557312253
-int offset = 1240; //940  1760  80 1040
+#define CALIBRATION_FACTOR -88.22111 //-89.32745  // 184.703557312253
+int offset = -6; //940  1760  80 1040 1240
 #define zero_factor 58744
 
 //loadcell
@@ -97,8 +99,8 @@ float offset4 = 0.00; // Offset สำหรับตัวที่สี่
 //float gain4 = 0.99;    // Gain สำหรับตัวที่สี่
 
 //Constant Value for calculation
-float R1 = 10000; // constant R1 = 100 kOhm for 1x1 // constant R1 = 10 kOhm for 3x3
-float R2 = 10000; // constant R2 = 100 kOhm for 1x1 // constant R1 = 10 kOhm for 3x3
+float R1 = 100000; // constant R1 = 100 kOhm for 1x1 // constant R1 = 10 kOhm for 3x3
+float R2 = 100000; // constant R2 = 100 kOhm for 1x1 // constant R1 = 10 kOhm for 3x3
 
 float I;
 float amp10;
@@ -127,8 +129,8 @@ String record = "";
 //WebServer server(80);
 //String htmlView = "";
 // WiFi credentials
-const char *ssid = "TP-Link_5080";  //{TP-Link_AD28, TP-Link_5080, TP-Link_0B37}
-const char *password = "70254211"; //{:96969755,  :70254211, :11741428}
+const char *ssid = "LINKSYS2";  //{TP-Link_AD28, TP-Link_5080, TP-Link_0B37, LINKSYS2}
+const char *password = "cblast401"; //{:96969755,  :70254211, :11741428, :cblast401}
 
 String dateTimeStr = "";
 long timezone = 7;
@@ -143,7 +145,7 @@ int axisX = 1;
 int axisY = 1;
 int axisZ = 1;
 int depth = 40;
-int interval = 10;
+int interval = 30;
 
 int x = 0;
 int y = 0;
@@ -219,7 +221,7 @@ void heartBeat()
   // Return to high-Z
   pinMode(trigWDTPin, INPUT);
 
-  Serial.println("Heartbeat");
+  // Serial.println("Heartbeat");
   // SerialBT.println("Heartbeat");
 }
 
@@ -262,14 +264,14 @@ void split(const String &str, char delimiter, int **arr, int row) {
 bool readConfig(const String &filename, Config01 &config01, Config02 &config02, Config03 &config03) {
     // Initialize SD card
     if (!SD.begin()) {
-        Serial.println("SD card initialization failed.");
+        // Serial.println("SD card initialization failed.");
         return false;
     }
 
     // Open the config file
     File configFile = SD.open(filename);
     if (!configFile) {
-        Serial.println("Config file not found.");
+        // Serial.println("Config file not found.");
         return false;
     }
 
@@ -301,7 +303,7 @@ bool readConfig(const String &filename, Config01 &config01, Config02 &config02, 
         arr = config03.pos;
     }
 
-    Serial.println("FileconfigName: " + filename);
+    // Serial.println("FileconfigName: " + filename);
 
     while (configFile.available()) {
         line = configFile.readStringUntil('\n');
@@ -309,15 +311,15 @@ bool readConfig(const String &filename, Config01 &config01, Config02 &config02, 
         if (line.startsWith("Name=")) {
             if (filename.equals("/test01.config")) {
                 config01.name = line.substring(5); // Extract the name from the line
-                Serial.println("Config name: " + config01.name);
+                // Serial.println("Config name: " + config01.name);
                 ESPUI.updateControlValue(nameText, config01.name);
             } else if (filename.equals("/test02.config")) {
                 config02.name = line.substring(5); // Extract the name from the line
-                Serial.println("Config name: " + config02.name);
+                // Serial.println("Config name: " + config02.name);
                 ESPUI.updateControlValue(nameText, config02.name);
             } else if (filename.equals("/test03.config")) {
                 config03.name = line.substring(5); // Extract the name from the line
-                Serial.println("Config name: " + config03.name);
+                // Serial.println("Config name: " + config03.name);
                 ESPUI.updateControlValue(nameText, config03.name);
             }
         } else if (line.startsWith("Loop=")) {
@@ -423,7 +425,7 @@ void listDir(fs::FS &fs, const char *dirname, uint8_t levels)
     int countFile = 0;
 
     // Print the directory being listed
-    Serial.printf("Listing directory: %s\n", dirname);
+    // Serial.printf("Listing directory: %s\n", dirname);
 
     // Open the directory
     File root = fs.open(dirname);
@@ -432,7 +434,7 @@ void listDir(fs::FS &fs, const char *dirname, uint8_t levels)
     if (!root)
     {
         // Print an error message if the directory could not be opened
-        Serial.println("Failed to open directory");
+        // Serial.println("Failed to open directory");
         return;
     }
 
@@ -440,7 +442,7 @@ void listDir(fs::FS &fs, const char *dirname, uint8_t levels)
     if (!root.isDirectory())
     {
         // Print an error message if the file is not a directory
-        Serial.println("Not a directory");
+        // Serial.println("Not a directory");
         return;
     }
 
@@ -457,12 +459,12 @@ void listDir(fs::FS &fs, const char *dirname, uint8_t levels)
         if (file.isDirectory())
         {
             // Print the directory name and its last write time
-            Serial.print("  DIR : ");
-            Serial.print(file.name());
+            // Serial.print("  DIR : ");
+            // Serial.print(file.name());
 
             time_t t = file.getLastWrite();
             struct tm *tmstruct = localtime(&t);
-            Serial.printf("  LAST WRITE: %d-%02d-%02d %02d:%02d:%02d\n", (tmstruct->tm_year) + 1900, (tmstruct->tm_mon) + 1, tmstruct->tm_mday, tmstruct->tm_hour, tmstruct->tm_min, tmstruct->tm_sec);
+            // Serial.printf("  LAST WRITE: %d-%02d-%02d %02d:%02d:%02d\n", (tmstruct->tm_year) + 1900, (tmstruct->tm_mon) + 1, tmstruct->tm_mday, tmstruct->tm_hour, tmstruct->tm_min, tmstruct->tm_sec);  //คำนวณก่อน sec+1 millisec>1000
 
             // If the number of levels is greater than 0, recursively list the subdirectories
             if (levels)
@@ -473,16 +475,16 @@ void listDir(fs::FS &fs, const char *dirname, uint8_t levels)
         else
         {
             // Print the file name and its size, as well as its last write time
-            Serial.print("  FILE: ");
-            Serial.print(file.name());
+            // Serial.print("  FILE: ");
+            // Serial.print(file.name());
             fileNameResult.concat(file.name());
 
-            Serial.print("  SIZE: ");
-            Serial.print(file.size());
+            // Serial.print("  SIZE: ");
+            // Serial.print(file.size());
 
             time_t t = file.getLastWrite();
             struct tm *tmstruct = localtime(&t);
-            Serial.printf("  LAST WRITE: %d-%02d-%02d %02d:%02d:%02d\n", (tmstruct->tm_year) + 1900, (tmstruct->tm_mon) + 1, tmstruct->tm_mday, tmstruct->tm_hour, tmstruct->tm_min, tmstruct->tm_sec);
+            // Serial.printf("  LAST WRITE: %d-%02d-%02d %02d:%02d:%02d\n", (tmstruct->tm_year) + 1900, (tmstruct->tm_mon) + 1, tmstruct->tm_mday, tmstruct->tm_hour, tmstruct->tm_min, tmstruct->tm_sec);
         }
 
         // Open the next file in the directory
@@ -505,18 +507,18 @@ void listDir(fs::FS &fs, const char *dirname, uint8_t levels)
 void createDir(fs::FS &fs, const char *path)
 {
   // Print the path of the directory being created
-  Serial.printf("Creating Dir: %s\n", path);
+  // Serial.printf("Creating Dir: %s\n", path);
 
   // Attempt to create the directory
   if (fs.mkdir(path))
   {
     // Print a success message if the directory was created
-    Serial.println("Dir created");
+    // Serial.println("Dir created");
   }
   else
   {
     // Print a failure message if the directory creation failed
-    Serial.println("mkdir failed");
+    // Serial.println("mkdir failed");
   }
 }
 
@@ -534,18 +536,18 @@ void createDir(fs::FS &fs, const char *path)
 void removeDir(fs::FS &fs, const char *path)
 {
   // Print the path of the directory being removed
-  Serial.printf("Removing Dir: %s\n", path);
+  // Serial.printf("Removing Dir: %s\n", path);
 
   // Attempt to remove the directory
   if (fs.rmdir(path))
   {
     // Print a success message if the directory was removed
-    Serial.println("Dir removed");
+    // Serial.println("Dir removed");
   }
   else
   {
     // Print a failure message if the directory removal failed
-    Serial.println("rmdir failed");
+    // Serial.println("rmdir failed");
   }
 }
 
@@ -567,7 +569,7 @@ void readFile(fs::FS &fs, const char *path)
   File file = fs.open(path);
   if (!file)
   {
-    Serial.println("Failed to open file for reading");
+    // Serial.println("Failed to open file for reading");
     return;
   }
 
@@ -575,7 +577,7 @@ void readFile(fs::FS &fs, const char *path)
 
   while (file.available())
   {
-    Serial.write(file.read());
+    // Serial.write(file.read());
   }
 
   file.close();
@@ -597,7 +599,7 @@ void readFile(fs::FS &fs, const char *path)
 void writeFile(fs::FS &fs, const char *path, const char *message)
 {
   // Print a message indicating the file we are writing to
-  Serial.printf("Writing file: %s\n", path);
+  // Serial.printf("Writing file: %s\n", path);
 
   // Open the file for writing
   File file = fs.open(path, FILE_WRITE);
@@ -605,7 +607,7 @@ void writeFile(fs::FS &fs, const char *path, const char *message)
   // If the file failed to open, print a failure message and return
   if (!file)
   {
-    Serial.println("Failed to open file for writing");
+    // Serial.println("Failed to open file for writing");
     return;
   }
 
@@ -613,12 +615,12 @@ void writeFile(fs::FS &fs, const char *path, const char *message)
   if (file.print(message))
   {
     // If the write was successful, print a success message
-    Serial.println("File written");
+    // Serial.println("File written");
   }
   else
   {
     // If the write failed, print a failure message
-    Serial.println("Write failed");
+    // Serial.println("Write failed");
   }
 
   // Close the file
@@ -642,7 +644,7 @@ void writeFile(fs::FS &fs, const char *path, const char *message)
 void appendFile(fs::FS &fs, const char *path, const char *message)
 {
   // Print a message indicating the file we are appending to
-  Serial.printf("Appending to file: %s\n", path);
+  // Serial.printf("Appending to file: %s\n", path);
 
   // Open the file for appending
   File file = fs.open(path, FILE_APPEND);
@@ -650,7 +652,7 @@ void appendFile(fs::FS &fs, const char *path, const char *message)
   // If the file failed to open, print a failure message and return
   if (!file)
   {
-    Serial.println("Failed to open file for appending");
+    // Serial.println("Failed to open file for appending");
     return;
   }
 
@@ -660,14 +662,14 @@ void appendFile(fs::FS &fs, const char *path, const char *message)
     // If the append was successful, print a success message
     dataLog = "Message appended";
     ESPUI.updateLabel(logStatus, String(dataLog));
-    Serial.println(dataLog);
+    // Serial.println(dataLog);
   }
   else
   {
     // If the append failed, print a failure message
     dataLog = "Append failed";
     ESPUI.updateLabel(logStatus, String(dataLog));
-    Serial.println(dataLog);
+    // Serial.println(dataLog);
   }
 
   // Close the file
@@ -684,18 +686,18 @@ void appendFile(fs::FS &fs, const char *path, const char *message)
 void renameFile(fs::FS &fs, const char *path1, const char *path2)
 {
   // Print a message indicating the file we are renaming and to what it is being renamed
-  Serial.printf("Renaming file %s to %s\n", path1, path2);
+  // Serial.printf("Renaming file %s to %s\n", path1, path2);
 
   // Attempt to rename the file
   if (fs.rename(path1, path2))
   {
     // If the rename was successful, print a success message
-    Serial.println("File renamed");
+    // Serial.println("File renamed");
   }
   else
   {
     // If the rename failed, print a failure message
-    Serial.println("Rename failed");
+    // Serial.println("Rename failed");
   }
 }
 
@@ -708,18 +710,18 @@ void renameFile(fs::FS &fs, const char *path1, const char *path2)
 void deleteFile(fs::FS &fs, const char *path)
 {
   // Print a message indicating the file being deleted
-  Serial.printf("Deleting file: %s\n", path);
+  // Serial.printf("Deleting file: %s\n", path);
 
   // Attempt to delete the file
   if (fs.remove(path))
   {
     // If the deletion was successful, print a success message
-    Serial.println("File deleted");
+    // Serial.println("File deleted");
   }
   else
   {
     // If the deletion failed, print a failure message
-    Serial.println("Delete failed");
+    // Serial.println("Delete failed");
   }
 }
 
@@ -757,24 +759,24 @@ String a00(int n)
 float readLoadCell()
 {
 
-
+  //scale.tare();
   float reading = 0;
 
   // Check if the scale is ready to take a reading
-  if (scale.is_ready()) {
+  if (scale.wait_ready_timeout(200)) {
     // Read the weight from the scale
-    reading = abs(scale.get_units(1));
+    reading = abs(round(scale.get_units(1)));
         //Serial.print("HX711 reading: ");
         //Serial.println(reading);
-    //if (reading < 5){
-    //  reading = 0;  
-    //}
-    //else {
-      reading = reading + offset;
-    //  }
+   if (reading < 10){
+      reading = 0;  
+    }
+    else {
+    reading = reading + offset;
+      }
     
   } else {
-    Serial.println("HX711 not found.");
+    // Serial.println("HX711 not found.");
   }
   
   return reading;
@@ -794,12 +796,12 @@ void moveRight()
 
 void lift()
 {
-  Serial.println("lift");
+  // Serial.println("lift");
   // delay(100);
 }
 void down()
 {
-  Serial.println("down");//
+  // Serial.println("down");//
   // delay(100);
 }
 
@@ -812,7 +814,7 @@ void armLogic()
   lift();
   moveRight();
   down();
-  Serial.println(config01.numPos);
+  // Serial.println(config01.numPos);
 
 
 }
@@ -860,13 +862,13 @@ void moveAxisZ(Control* sender, int type)
   currentZ = currentZ * (axisZ * 10);
   
   // Print the current Z-axis position to the serial monitor
-  Serial.println("moveAxisZ");
-  Serial.println(currentZ);
+  // Serial.println("moveAxisZ");
+  // Serial.println(currentZ);
 
   // Check if the current Z-axis position is greater than the previous Z-axis position
   if (currentZ > previousZ) {
     // Print "up" to the serial monitor
-    Serial.println("up");
+    // Serial.println("up");
     
     // Move the Z-axis up by 100 steps
     stepperZ.moveTo(100);
@@ -877,7 +879,7 @@ void moveAxisZ(Control* sender, int type)
   // Check if the current Z-axis position is less than the previous Z-axis position
   else if (currentZ < previousZ) {
     // Print "down" to the serial monitor
-    Serial.println("down");
+    // Serial.println("down");
     
     // Move the Z-axis down by 100 steps
     stepperZ.moveTo(-100);
@@ -987,8 +989,9 @@ void setUpUI() {
   ESPUI.addControl(Option, "Center Point", "2", None, posText, setTextInputCallback);
   ESPUI.addControl(Option, "30x30", "3", None, posText, setTextInputCallback);
   loopText = ESPUI.addControl(ControlType::Number, "Loop", "", ControlColor::None, settingTab, setTextInputCallback);
-  depthText = ESPUI.addControl(ControlType::Number, "Depth press (mm X 0.1)", String(depth), ControlColor::None, settingTab, setTextInputCallback);
+  depthText = ESPUI.addControl(ControlType::Number, "Depth press (mm. X 0.1)", String(depth), ControlColor::None, settingTab, setTextInputCallback);
   intervalPress = ESPUI.addControl(ControlType::Number, "The interval between presses (seconds)", String(interval), ControlColor::None, settingTab, setTextInputCallback);
+  maxDept = ESPUI.addControl(Number, "Maximun of Depth (mm.)", "5", None, settingTab, setTextInputCallback);
 
   //  ESPUI.addControl(Separator, "Setting Config File", "", None, settingTab);
 
@@ -1028,7 +1031,7 @@ void setUpUI() {
 //This callback generates and applies inline styles to a bunch of controls to change their colour.
 
 void setTextInputCallback(Control *sender, int type) {
-  Serial.println(sender->value);
+  // Serial.println(sender->value);
   ESPUI.updateControl(sender);
   /*Control* pos_ = ESPUI.getControl(posText);
   Serial.println("posText: " + pos_->value);*/
@@ -1116,16 +1119,16 @@ void downloadCallback(Control *sender, int type) {
 }
 
 void startButtonCallback(Control *sender, int type) {
-  Serial.print("CB: id(");
-  Serial.print(sender->id);
-  Serial.print(") Type(");
-  Serial.print(type);
-  Serial.print(") '");
-  Serial.print(sender->label);
-  Serial.print("' = ");
-  Serial.println(sender->value);
+  // Serial.print("CB: id(");
+  // Serial.print(sender->id);
+  // Serial.print(") Type(");
+  // Serial.print(type);
+  // Serial.print(") '");
+  // Serial.print(sender->label);
+  // Serial.print("' = ");
+  // Serial.println(sender->value);
   boolean isPress = String(sender->value).toInt();
-  Serial.print("isPress:"); Serial.println(isPress);
+  // Serial.print("isPress:"); Serial.println(isPress);
   if (isPress)
     isStopStart = true;
   else
@@ -1135,14 +1138,14 @@ void startButtonCallback(Control *sender, int type) {
 //Most elements in this test UI are assigned this generic callback which prints some
 //basic information. Event types are defined in ESPUI.h
 void generalCallback(Control *sender, int type) {
-  Serial.print("CB: id(");
-  Serial.print(sender->id);
-  Serial.print(") Type(");
-  Serial.print(type);
-  Serial.print(") '");
-  Serial.print(sender->label);
-  Serial.print("' = ");
-  Serial.println(sender->value);
+  // Serial.print("CB: id(");
+  // Serial.print(sender->id);
+  // Serial.print(") Type(");
+  // Serial.print(type);
+  // Serial.print(") '");
+  // Serial.print(sender->label);
+  // Serial.print("' = ");
+  // Serial.println(sender->value);
 }
 /**
  * \brief Callback function for the load result button
@@ -1151,14 +1154,14 @@ void generalCallback(Control *sender, int type) {
  */
 
 void loadResultCallback(Control *sender, int type) {
-  Serial.print("CB: id(");
-  Serial.print(sender->id);
-  Serial.print(") Type(");
-  Serial.print(type);
-  Serial.print(") '");
-  Serial.print(sender->label);
-  Serial.print("' = ");
-  Serial.println(sender->value);
+  // Serial.print("CB: id(");
+  // Serial.print(sender->id);
+  // Serial.print(") Type(");
+  // Serial.print(type);
+  // Serial.print(") '");
+  // Serial.print(sender->label);
+  // Serial.print("' = ");
+  // Serial.println(sender->value);
 
   // Update the label with the file name
   ESPUI.updateLabel(grouplabel2, String(fileName));
@@ -1173,8 +1176,8 @@ void loadResultCallback(Control *sender, int type) {
   record.concat("Date/Time,Loop,Round,Value1,Value2,Value3,Value4,Value5,Value6,Value7,Value8,Value9,Value10,Value11,Value12,LoadCell\n");
   appendFile(SD, fileNameResult.c_str(), record.c_str());
   record = "";
-  Serial.println("Result:");
-  Serial.println(fileNameResult);
+  // Serial.println("Result:");
+  // Serial.println(fileNameResult);
 
 
 }
@@ -1191,40 +1194,40 @@ void loadResultCallback(Control *sender, int type) {
  */
 void moveAxisXY(Control *sender, int type) {
   // Print a message indicating the axis being moved
-  Serial.println("moveAxisXY");
+  // Serial.println("moveAxisXY");
 
   // Print information about the control that was clicked
-  Serial.print("CB: id(");
-  Serial.print(sender->id);
-  Serial.print(") Type(");
-  Serial.print(type);
-  Serial.print(") '");
-  Serial.println(sender->label);
+  // Serial.print("CB: id(");
+  // Serial.print(sender->id);
+  // Serial.print(") Type(");
+  // Serial.print(type);
+  // Serial.print(") '");
+  // Serial.println(sender->label);
 
   // Determine the direction to move the axis based on the type of event
   if (4 == abs(type)) {  // Up
-    Serial.println("up");
+    // Serial.println("up");
     stepperY.moveTo(100);  // Move the Y axis up
     stepperY.runToPosition();  // Run the Y axis to the new position
     stepperY.setCurrentPosition(0);  // Reset the Y axis position
   }
 
   if (3 == abs(type)) {  // Right
-    Serial.println("right");
+    // Serial.println("right");
     stepperX.moveTo(-100);  // Move the X axis right
     stepperX.runToPosition();  // Run the X axis to the new position
     stepperX.setCurrentPosition(0);  // Reset the X axis position
   }
 
   if (2 == abs(type)) {  // Left
-    Serial.println("left");
+    // Serial.println("left");
     stepperX.moveTo(100);  // Move the X axis left
     stepperX.runToPosition();  // Run the X axis to the new position
     stepperX.setCurrentPosition(0);  // Reset the X axis position
   }
 
   if (5 == abs(type)) {  // Down
-    Serial.println("down");
+    // Serial.println("down");
     stepperY.moveTo(-100);  // Move the Y axis down
     stepperY.runToPosition();  // Run the Y axis to the new position
     stepperY.setCurrentPosition(0);  // Reset the Y axis position
@@ -1239,15 +1242,15 @@ void moveAxisXY(Control *sender, int type) {
 // using a lambda function
 void extendedCallback(Control* sender, int type, void* param)
 {
-  Serial.print("CB: id(");
-  Serial.print(sender->id);
-  Serial.print(") Type(");
-  Serial.print(type);
-  Serial.print(") '");
-  Serial.print(sender->label);
-  Serial.print("' = ");
-  Serial.println(sender->value);
-  Serial.println(String("param = ") + String((int)param));
+  // Serial.print("CB: id(");
+  // Serial.print(sender->id);
+  // Serial.print(") Type(");
+  // Serial.print(type);
+  // Serial.print(") '");
+  // Serial.print(sender->label);
+  // Serial.print("' = ");
+  // Serial.println(sender->value);
+  // Serial.println(String("param = ") + String((int)param));
 }
 
 // Task1code: blinks an LED every 1000 ms
@@ -1325,7 +1328,7 @@ bool initializeSensors() {
   if (!ads1.begin(0x48) || !ads2.begin(0x49) || !ads3.begin(0x4A) || !ads4.begin(0x4B)) {
     ADS = "Failed to initialize ADS1115!";
     ESPUI.updateLabel(ADSStatus, String(ADS));
-    Serial.println(ADS);
+    // Serial.println(ADS);
     success = false;
     while(1);
   }
@@ -1440,20 +1443,20 @@ void connectWifi() {
     connect_timeout = 28; //7 seconds
     while (WiFi.status() != WL_CONNECTED && connect_timeout > 0) {
       delay(250);
-      Serial.print(".");
+      // Serial.print(".");
       connect_timeout--;
     }
   }
 
   if (WiFi.status() == WL_CONNECTED) {
-    Serial.println(WiFi.localIP());
-    Serial.println("Wifi started");
+    // Serial.println(WiFi.localIP());
+    // Serial.println("Wifi started");
 
     if (!MDNS.begin(HOSTNAME)) {
-      Serial.println("Error setting up MDNS responder!");
+      // Serial.println("Error setting up MDNS responder!");
     }
   } else {
-    Serial.println("\nCreating access point...");
+    // Serial.println("\nCreating access point...");
     WiFi.mode(WIFI_AP);
     WiFi.softAPConfig(IPAddress(192, 168, 1, 1), IPAddress(192, 168, 1, 1), IPAddress(255, 255, 255, 0));
     WiFi.softAP(HOSTNAME);
@@ -1461,7 +1464,7 @@ void connectWifi() {
     connect_timeout = 20;
     do {
       delay(250);
-      Serial.print(",");
+      // Serial.print(",");
       connect_timeout--;
     } while (connect_timeout);
   }
@@ -1469,9 +1472,9 @@ void connectWifi() {
 
 void enterWifiDetailsCallback(Control * sender, int type) {
   if (type == B_UP) {
-    Serial.println("Saving credentials to EPROM...");
-    Serial.println(ESPUI.getControl(wifi_ssid_text)->value);
-    Serial.println(ESPUI.getControl(wifi_pass_text)->value);
+    // Serial.println("Saving credentials to EPROM...");
+    // Serial.println(ESPUI.getControl(wifi_ssid_text)->value);
+    // Serial.println(ESPUI.getControl(wifi_pass_text)->value);
     unsigned int i;
     EEPROM.begin(100);
     for (i = 0; i < ESPUI.getControl(wifi_ssid_text)->value.length(); i++) {
@@ -1515,7 +1518,7 @@ void readADS(){
           record.concat(",");
           record.concat(String(Res10, 4));
           record.concat(",");
-          record.concat(" ");
+          // record.concat(" ");
      }
 
       for (int i = 0; i < 3; i++){
@@ -1528,7 +1531,7 @@ void readADS(){
           record.concat(",");
           record.concat(String(Res20, 4));
           record.concat(",");
-          record.concat(" ");
+          // record.concat(" ");
       }
 
       for (int i = 0; i < 3; i++){
@@ -1541,7 +1544,7 @@ void readADS(){
             record.concat(",");
             record.concat(String(Res30, 4));
             record.concat(",");
-            record.concat(" ");
+            // record.concat(" ");
       }
 
       for (int i = 0; i < 3; i++){
@@ -1554,56 +1557,8 @@ void readADS(){
             record.concat(",");
             record.concat(String(Res40, 4));
             record.concat(",");
-            record.concat(" ");
+            // record.concat(" ");
       }
-}
-
-String getFormattedDateTime() {
-  // Calculate elapsed time since last sync
-  unsigned long currentMillis = millis();
-  unsigned long elapsedMillis = currentMillis - millisAtLastSync;  // Time elapsed since last sync
-  unsigned long totalMillis = (lastEpoch * 1000) + elapsedMillis;  // Total time in milliseconds
-
-  // Convert to seconds and milliseconds
-  time_t currentTime = totalMillis / 1000;          // Current time in seconds
-  unsigned long currentMillisPart = totalMillis % 1000;  // Remaining milliseconds
-
-  // Update `tmstruct` with calculated time
-  localtime_r(&currentTime, &tmstruct);
-  delay(100);
-
-  getLocalTime(&tmstruct, 5000);
-
-  // Format the date and time
-  dayStr = String(tmstruct.tm_mday, DEC);
-  hourStr = String(a0(tmstruct.tm_hour));
-  minStr = String(a0(tmstruct.tm_min));
-  secStr = String(a0(tmstruct.tm_sec));
-  msStr = String(currentMillisPart);
-  
-  while (msStr.length() < 3) {             // Zero-pad if less than three digits
-            msStr = "0" + msStr;
-          }
-
-  // สร้างข้อความแสดงผล
-   dateTimeStr.concat(dayStr);
-   dateTimeStr.concat("/");
-   dateTimeStr.concat(monthStr);
-   dateTimeStr.concat("/");
-   dateTimeStr.concat(yearStr);
-   dateTimeStr.concat(",");
-   dateTimeStr.concat(" ");
-   dateTimeStr.concat(hourStr);
-   dateTimeStr.concat(":");
-   dateTimeStr.concat(minStr);
-   dateTimeStr.concat(":");
-   dateTimeStr.concat(secStr);
-   dateTimeStr.concat(":");
-   dateTimeStr.concat(msStr);
-   dateTimeStr.concat(",");
-   dateTimeStr.concat(" ");
-
-  return dateTimeStr;
 }
 
 
@@ -1615,9 +1570,9 @@ void setup() {
 
 //Start I2C section
    Wire.begin();
-  Wire.setClock(800000); // Set I2C clock frequency to 400 kHz
-  Serial.println("Getting differential reading from AIN0 (P) and AIN1 (N)");
-  Serial.println("+/- 1.024V  1 bit = 0.5mV    0.03125mV");
+  Wire.setClock(3400000); // Set I2C clock frequency to 400 kHz
+  // Serial.println("Getting differential reading from AIN0 (P) and AIN1 (N)");
+  // Serial.println("+/- 1.024V  1 bit = 0.5mV    0.03125mV");
 
 //Start WiFi section
   while (!Serial);
@@ -1629,21 +1584,21 @@ void setup() {
 
   setUpUI(); //Start the GUI
 
-  Serial.print("Connecting to ");
-  Serial.println(ssid);
+  // Serial.print("Connecting to ");
+  // Serial.println(ssid);
 
   WiFi.begin(ssid, password);
 
   while (WiFi.status() != WL_CONNECTED)
   {
     delay(500);
-    Serial.print(".");
+    // Serial.print(".");
   }
-  Serial.println("WiFi connected");
+  // Serial.println("WiFi connected");
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
-  Serial.println("Contacting Time Server");
-  configTime(3600 * timezone, daysavetime * 3600, "time.nist.gov", "0.pool.ntp.org", "1.pool.ntp.org");
+  // Serial.println("Contacting Time Server");
+  // configTime(3600 * timezone, daysavetime * 3600, "0.pool.ntp.org", "time.nist.gov", "1.pool.ntp.org"); //configTime(3600 * timezone, daysavetime * 3600, "time.nist.gov", "1.pool.ntp.org", "0.pool.ntp.org");
   // บันทึกเวลาสำหรับการ sync ครั้งแรก
   millisAtLastSync = millis();
   lastEpoch = mktime(&tmstruct);
@@ -1662,45 +1617,45 @@ void setup() {
   fileName.concat(hourStr);
   fileName.concat(minStr);
   fileName.concat(".csv");
-  Serial.printf("\nNow is : %d-%02d-%02d %02d:%02d:%02d\n", (tmstruct.tm_year) + 1900, (tmstruct.tm_mon) + 1, tmstruct.tm_mday, tmstruct.tm_hour, tmstruct.tm_min, tmstruct.tm_sec);
-  Serial.println("");
+  // Serial.printf("\nNow is : %d-%02d-%02d %02d:%02d:%02d\n", (tmstruct.tm_year) + 1900, (tmstruct.tm_mon) + 1, tmstruct.tm_mday, tmstruct.tm_hour, tmstruct.tm_min, tmstruct.tm_sec);
+  // Serial.println("");
 
 //Start SD card section
   if (!SD.begin())
   {
     cardStatus = "Card Mount Failed";
     ESPUI.updateLabel(SDcardRead, String(cardStatus));
-    Serial.println(cardStatus);
+    // Serial.println(cardStatus);
     return;
   }
   uint8_t cardType = SD.cardType();
 
   if (cardType == CARD_NONE)
   {
-    Serial.println("No SD card attached");
+    // Serial.println("No SD card attached");
     return;
   }
 
-  Serial.print("SD Card Type: ");
+  // Serial.print("SD Card Type: ");
   if (cardType == CARD_MMC)
   {
-    Serial.println("MMC");
+    // Serial.println("MMC");
   }
   else if (cardType == CARD_SD)
   {
-    Serial.println("SDSC");
+    // Serial.println("SDSC");
   }
   else if (cardType == CARD_SDHC)
   {
-    Serial.println("SDHC");
+    // Serial.println("SDHC");
   }
   else
   {
-    Serial.println("UNKNOWN");
+    // Serial.println("UNKNOWN");
   }
 
   uint64_t cardSize = SD.cardSize() / (1024 * 1024);
-  Serial.printf("SD Card Size: %lluMB\n", cardSize);
+  // Serial.printf("SD Card Size: %lluMB\n", cardSize);
 
   
 
@@ -1759,13 +1714,13 @@ void setup() {
   scale.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN);
   scale.set_gain(128);
   scale.set_scale(CALIBRATION_FACTOR); // this value is obtained by calibrating the scale with known weights
-  scale.set_offset(zero_factor);
+  //scale.set_offset(zero_factor);
   scale.tare();
 //End scale section  
 
-  Serial.print("Free heap memory: ");
-  Serial.print(ESP.getFreeHeap());
-  Serial.println(" bytes");
+  // Serial.print("Free heap memory: ");
+  // Serial.print(ESP.getFreeHeap());
+  // Serial.println(" bytes");
 
 }
 
@@ -1787,7 +1742,7 @@ void loop() {
   if (Serial.available()) {
     switch (Serial.read()) {
       case 'w': //Print IP details
-        Serial.println(WiFi.localIP());
+        // Serial.println(WiFi.localIP());
         break;
       case 'W': //Reconnect wifi
         connectWifi();
@@ -1802,15 +1757,21 @@ void loop() {
   }
 
 #if !defined(ESP32)
-  //We don't need to call this explicitly on ESP32 but we do on 8266
+  //We don't need to call this explicitly on ESP32 but we do on 8266lineCount
+
   MDNS.update();
 #endif
   Control* loop_  = ESPUI.getControl(loopText);
   Control* pos_   = ESPUI.getControl(posText);
   Control* depth_ = ESPUI.getControl(depthText);
   Control* interval_ = ESPUI.getControl(intervalPress);
+  Control* max_ = ESPUI.getControl(maxDept);
   depth = -(depth_->value.toInt()) * 10;
   interval = interval_->value.toInt();
+  float mm = abs(depth_->value.toFloat()) / 10;
+  float deptStep = 0.0;
+  int max = max_->value.toFloat();
+  int calD = -400;
 
 //Start of main loop
   if (isStopStart && (loopCount <= loop_->value.toInt() )) {
@@ -1818,6 +1779,7 @@ void loop() {
         //Serial.println(loopCount);
         //Serial.print("Loop: ");
         //Serial.println(config.loop);
+        // Serial.printf("Check loopCount: %d loop input: %d \n", loopCount, loop_->value.toInt());
 
     // tmstruct.tm_year is years since 1900, so we add 1900 to get the full year
     yearStr = String(tmstruct.tm_year + 1900, DEC);
@@ -1832,15 +1794,15 @@ void loop() {
       Serial.println("loopCount:" + String(loopCount));*/
       int lineCount = 0;
       int _value = 0;
-            Serial.print("x:");
-            Serial.println(config01.pos[x][0]);
+            // Serial.print("x:");
+            // Serial.println(config01.pos[x][0]);
       stepperX.moveTo(config01.pos[x][0]);
       stepperX.runToPosition();
       stepperX.setCurrentPosition(0);
 
 
-            Serial.print("y:");
-            Serial.println(config01.pos[x][1]);
+            // Serial.print("y:");
+            // Serial.println(config01.pos[x][1]);
       stepperY.moveTo(config01.pos[x][1]);
       stepperY.runToPosition();
       stepperY.setCurrentPosition(0);
@@ -1852,25 +1814,28 @@ void loop() {
 
       //  Serial.println(depthPress);
   //Start pressing material
-      stepperZ.moveTo(depth);
+      stepperZ.moveTo(calD);
       stepperZ.runToPosition();
       stepperZ.setCurrentPosition(0);
 
-  //Start recording data 
-      for (int z = 0; z < interval; z++){
+      while (deptStep <= max){
+        stepperZ.moveTo(depth);
+        stepperZ.runToPosition();
+        stepperZ.setCurrentPosition(0);
 
-      record.concat(getFormattedDateTime());
-      
-      record.concat(String(abs(depth)));
+  //Start recording data 
+      for (int l = 0; l < interval; l++){
+
+      // record.concat(getFormattedDateTime());
+      record.concat(String(deptStep));
       record.concat(",");
       record.concat(loopCount);
       record.concat(",");
       record.concat(testCount);
       record.concat(",");
-      record.concat(lineCount);
+      record.concat(l);
       record.concat(",");
-      record.concat(" ");
-      lineCount++;
+      // record.concat(" ");
 
   // Read all ADS1115 channels
       readADS();
@@ -1881,38 +1846,41 @@ void loop() {
       record.concat(String(loadCellReading));
       record.concat(",");
       record.concat(String(readloadcell));
-      record.concat("\n");
+      // record.concat("\n");
       
-      appendFile(SD, fileName.c_str(), record.c_str());
+      // appendFile(SD, fileName.c_str(), record.c_str());
       Serial.println(record);
       dateTimeStr = "";
       record = "";
       //delayMicroseconds(700000);
-      }      
+      }
+      deptStep += mm;
+      //scale.tare(); // reset the scale to 0
+
+      }
+      deptStep = max - mm;      
 
       record.concat("\n");
       
   //Stop pressing material
-      stepperZ.moveTo(abs(depth));
-      stepperZ.runToPosition();
-      stepperZ.setCurrentPosition(0);
+      while(deptStep >= 0.0){
+        stepperZ.moveTo(abs(depth));
+        stepperZ.runToPosition();
+        stepperZ.setCurrentPosition(0);
 
-      delayMicroseconds(1000000);
+    for (int l = 1; l <= interval; l++){
 
   //Start record data while load cell is hanging in the air
-      record.concat(getFormattedDateTime());
-      
-      record.concat(String(abs(depth)));
+      // record.concat(getFormattedDateTime());
+      record.concat(String(deptStep));
       record.concat(",");
       record.concat(loopCount);
       record.concat(",");
       record.concat(testCount);
       record.concat(",");
-      record.concat(lineCount);
+      record.concat(l);
       record.concat(",");
-      record.concat(" ");
-      testCount++;
-      lineCount++;
+      // record.concat(" ");
       
       // Read all ADS1115 channels
       readADS();
@@ -1923,15 +1891,22 @@ void loop() {
       record.concat(String(loadCellReading));
       record.concat(",");
       record.concat(String(readloadcell));
-      record.concat("\n");
+      // record.concat("\n");
       
-      appendFile(SD, fileName.c_str(), record.c_str());
+      // appendFile(SD, fileName.c_str(), record.c_str());
       Serial.println(record);
       dateTimeStr = "";
       record = "";
       
       scale.tare(); // reset the scale to 0
       record.concat("\n");
+    }
+    deptStep -= mm;
+    }
+      testCount++;
+      stepperZ.moveTo(abs(calD));
+      stepperZ.runToPosition();
+      stepperZ.setCurrentPosition(0);
 //End 1 step process
 
 //Checking for complete 9 steps
@@ -1952,96 +1927,122 @@ void loop() {
       int _value = 0;
       //      Serial.print("x:");
       //      Serial.print(config02.pos[x][0]);
-      stepperX.moveTo(config02.pos[x][0]);
-      stepperX.runToPosition();
-      stepperX.setCurrentPosition(0);
+      //stepperX.moveTo(config02.pos[x][0]);
+      //stepperX.runToPosition();
+      //stepperX.setCurrentPosition(0);
 
 
       //      Serial.print("y:");
       //      Serial.print(config02.pos[x][1]);
-      stepperY.moveTo(config02.pos[x][1]);
-      stepperY.runToPosition();
-      stepperY.setCurrentPosition(0);
+      //stepperY.moveTo(config02.pos[x][1]);
+      //stepperY.runToPosition();
+      //stepperY.setCurrentPosition(0);
       //      Serial.println("");
 
       //int depthPress = abs(config02.pos[0][2]);
 
       //      Serial.println("press...");
   //Start press material    
-        Serial.println("depthPress");
-      stepperZ.moveTo(depth);
-      stepperZ.runToPosition();
-      stepperZ.setCurrentPosition(0);
+        // Serial.println("depthPress");
+        // Serial.println("depstep 1 :" + String(deptStep));
+        // Serial.println("mm 1 :" + String(mm));
+        stepperZ.moveTo(calD);
+        stepperZ.runToPosition();
+        stepperZ.setCurrentPosition(0);
 
-  //Start record data
-      for (int z = 0; z < interval; z++){
-        
-      record.concat(getFormattedDateTime());
+      while (deptStep <= max){
+        stepperZ.moveTo(depth);
+        stepperZ.runToPosition();
+        stepperZ.setCurrentPosition(0);
+
+    //Start record data
+        for (int l = 1; l <= interval; l++) {
+        // record.concat(getFormattedDateTime());
+        record.concat(String(deptStep));
+        record.concat(",");
+        record.concat(loopCount);
+        record.concat(",");
+        record.concat(l);
+        record.concat(",");
+        // record.concat(" ");
+
+        readADS(); // Read all ADS1115 channels
+
+        // Read load cell
+        loadCellReading = readLoadCell();
+        readloadcell = loadCellReading * g * 0.001;
+        record.concat(String(loadCellReading));
+        record.concat(",");
+        record.concat(String(readloadcell));
+        // record.concat("\n");
+
+        // appendFile(SD, fileName.c_str(), record.c_str());
+        Serial.println(record);
+        dateTimeStr = "";
+        record = "";
+        //scale.tare(); // reset the scale to 0
+        }
+      deptStep += mm;
+      // Serial.println("depstep 3 :" + String(deptStep));
+      // Serial.println("mm 3 :" + String(mm));
+      //scale.tare(); // reset the scale to 0
+
+      }
+      deptStep = max - mm;
+      // Serial.println("depstep 4 :" + String(deptStep));
+      // Serial.println("mm 4 :" + String(mm));
+
+  //end record data for 4 seconds
+      // record.concat("\n");
+      //deptStep = 0.00;
+      //delayMicroseconds(1000000);
+
+  //Stop press material
+  while(deptStep >= 0.0){
+    stepperZ.moveTo(abs(depth));
+    stepperZ.runToPosition();
+    stepperZ.setCurrentPosition(0);
+      for (int l = 1; l <= interval; l++){
+  //Start record data while load cell is hanging in the air
+        // record.concat(getFormattedDateTime());
+        record.concat(String(deptStep));
+        record.concat(",");
+        record.concat(loopCount);
+        record.concat(",");
+        record.concat(l);
+        record.concat(",");
+        // record.concat(" ");
       
-      record.concat(String(abs(depth)));
-      record.concat(",");
-      record.concat(loopCount);
-      record.concat(",");
-      record.concat(testCount);
-      record.concat(",");
-      record.concat(" ");
-      testCount++;
-
-  // Read all ADS1115 channels
-      readADS();
+        readADS();// Read all ADS1115 channels
 
       // Read load cell
-    loadCellReading = readLoadCell();
-      readloadcell = loadCellReading * g * 0.001;
-      record.concat(String(loadCellReading));
-      record.concat(",");
-      record.concat(String(readloadcell));
-      record.concat("\n");
-      
-      appendFile(SD, fileName.c_str(), record.c_str());
-      Serial.println(record);
-      dateTimeStr = "";
-      record = "";
-      //delayMicroseconds(700000);
+        loadCellReading = readLoadCell();
+        readloadcell = loadCellReading * g * 0.001;
+        record.concat(String(loadCellReading));
+        record.concat(",");
+        record.concat(String(readloadcell));
+        // record.concat("\n");
+        
+        // appendFile(SD, fileName.c_str(), record.c_str());
+        Serial.println(record);
+        dateTimeStr = "";
+        record = "";
+        //scale.tare(); // reset the scale to 0
       }
-  //end record data for 4 seconds
-      record.concat("\n");
-
-  //Stop press material    
-      stepperZ.moveTo(abs(depth));
-      stepperZ.runToPosition();
-      stepperZ.setCurrentPosition(0);
-
-      delayMicroseconds(1000000);
-  
-  //Start record data while load cell is hanging in the air
-      record.concat(getFormattedDateTime());
       
-      record.concat(String(abs(depth)));
-      record.concat(",");
-      record.concat(loopCount);
-      record.concat(",");
-      record.concat(testCount);
-      record.concat(",");
-      record.concat(" ");
-     // Read all ADS1115 channels
-      readADS();
-
-     // Read load cell
-    loadCellReading = readLoadCell();
-      readloadcell = loadCellReading * g * 0.001;
-      record.concat(String(loadCellReading));
-      record.concat(",");
-      record.concat(String(readloadcell));
-      record.concat("\n");
+      deptStep -= mm;
+      //scale.tare(); // reset the scale to 0
+      // Serial.println("loop1:" + String(loopCount));
+  }
+  // loopCount++;
+  testCount++;
+  stepperZ.moveTo(abs(calD));
+  stepperZ.runToPosition();
+  stepperZ.setCurrentPosition(0);
+  // Serial.println("loop2:" + String(loopCount));
       
-      appendFile(SD, fileName.c_str(), record.c_str());
-      Serial.println(record);
-      dateTimeStr = "";
-      record = "";
-      
-      scale.tare(); // reset the scale to 0
-      record.concat("\n");
+      //scale.tare(); // reset the scale to 0
+      // record.concat("\n");
 //End 1 step process
 
 //Checking for complete test steps
@@ -2049,7 +2050,7 @@ void loop() {
     if (testCount > config02.numPos) {
       
       testCount = 1;
-      moveToStart();
+      //moveToStart();
 
     }
    
@@ -2088,9 +2089,8 @@ void loop() {
   //Start record data for 4 seconds      
         for (int z = 0; z < interval; z++){
         
-      record.concat(getFormattedDateTime());
-      
-      record.concat(String(abs(depth)));
+      // record.concat(getFormattedDateTime());
+      record.concat(String(mm));
       record.concat(",");
       record.concat(loopCount);
       record.concat(",");
@@ -2110,7 +2110,7 @@ void loop() {
       record.concat(String(readloadcell));
       record.concat("\n");
       
-      appendFile(SD, fileName.c_str(), record.c_str());
+      // appendFile(SD, fileName.c_str(), record.c_str());
       Serial.println(record);
       dateTimeStr = "";
       record = "";
@@ -2127,9 +2127,8 @@ void loop() {
       delayMicroseconds(1000000);
 
   //Start record data while load cell is hanging in the air
-      record.concat(getFormattedDateTime());
-      
-      record.concat(String(abs(depth)));
+      // record.concat(getFormattedDateTime());
+      record.concat(String(mm));
       record.concat(",");
       record.concat(loopCount);
       record.concat(",");
@@ -2149,7 +2148,7 @@ void loop() {
       record.concat(String(readloadcell));
       record.concat("\n");
       
-      appendFile(SD, fileName.c_str(), record.c_str());
+      // appendFile(SD, fileName.c_str(), record.c_str());
       Serial.println(record);
       dateTimeStr = "";
       record = "";
@@ -2168,12 +2167,12 @@ void loop() {
 
     }
     
-    
       } 
     }
 
     // Increment the loop count and update the main label with the new count
     loopCount++;
+    // Serial.println("loop3:" + String(loopCount));
     ESPUI.updateLabel(mainLabel, String(loopCount)); // Update the main label with the new loop count
 
     // Update the group label with the current file name
